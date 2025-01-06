@@ -55,7 +55,10 @@ public class Maze
 
         for (int i = 0; i < 8; i++)
         {
-            maze[start_wall_row + i, start_wall_col] = 1;
+            if (i == 6)
+                maze[start_wall_row + i, start_wall_col] = 0;
+            else
+                maze[start_wall_row + i, start_wall_col] = 1;
             walls.Add((start_wall_row+i, start_wall_col));
         }
     }
@@ -111,6 +114,7 @@ public class MazeSolver
         Node end_node = new Node(null, end);
         List<Node> open_list = new List<Node>();
         List<Node> closed_list = new List<Node>();
+        List<(int row, int col)> path = new List<(int row, int col)>();
 
         DrawMaze(start_node, end_node, start, end);
 
@@ -126,29 +130,30 @@ public class MazeSolver
                 }
             }
 
-            Node? nodeToRemove = null;
+            int idx = 0;
             for (int i = 0; i < open_list.Count; i++)
             {
                 if (open_list[i].position.row == current_node.position.row &&
                     open_list[i].position.col == current_node.position.col)
                 {
-                    nodeToRemove = open_list[i];
+                    idx = i; 
+                    break;
                 }
             }
 
-            if (nodeToRemove == null)
-            {
-                Console.WriteLine("error with removal (openlist popping)");
-                break;
-            }
-
-            open_list.Remove(nodeToRemove);
+            open_list.RemoveAt(idx);
             closed_list.Add(current_node);
 
             if (current_node.position.row == end.row &&
                 current_node.position.col == end.col)
             {
                 Console.WriteLine("made it!");
+                Node? current = current_node;
+                while (current != null)
+                {
+                    path.Add(current.position);
+                    current = current.parent; 
+                }
                 break;
             }
 
@@ -179,24 +184,43 @@ public class MazeSolver
             for (int i = 0; i < children.Count; i++)
             {
                 Node child_node = children[i];
+                bool dup_check = false;
+
+                for (int j = 0; j < closed_list.Count; j++)
+                { 
+                    if (child_node.position.row == closed_list[j].position.row &&
+                        child_node.position.col == closed_list[j].position.col)
+                    {
+                        dup_check = true;
+                        break;
+                    }
+                }
+                if (dup_check)
+                    continue;
+
                 child_node.g = current_node.g + 1;
                 int h = (int)Math.Pow((child_node.position.row - end_node.position.row), 2);
                 h += (int)Math.Pow((child_node.position.col - end_node.position.col), 2);
                 child_node.h = h;
                 child_node.f = child_node.g + child_node.h;
 
-                bool found = false;
+                bool g_check = false;
                 for (int j = 0; j < open_list.Count; j++)
                 {
                     if (open_list[j].position.row == child_node.position.row &&
                         open_list[j].position.col == child_node.position.col)
                     {
-                        found = true;
-                        break;
+                        if (child_node.g > open_list[j].g)
+                        {
+                            g_check = true;
+                            break;
+                        }
                     }
                 }
-                if (!found)
-                    open_list.Add(child_node);
+                if (g_check)
+                    continue;
+
+                open_list.Add(child_node);
             }
         }
 
@@ -205,15 +229,12 @@ public class MazeSolver
         {
             for (int j = 0; j < theMaze.cols; j++)
             {
-                if (Check((i, j), closed_list))
+                if (Check((i, j), path))
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
                 }
-                if (i == end.row && j == end.col)
-                {
-                    Console.ForegroundColor = ConsoleColor.Blue;
-                }
-                if (i == start.row && j == start.col)
+                if (i == end.row && j == end.col ||
+                    i == start.row && j == start.col)
                 {
                     Console.ForegroundColor = ConsoleColor.Blue;
                 }
@@ -227,13 +248,13 @@ public class MazeSolver
             Console.Write("\n");
         }
     }
-
-    public bool Check((int row, int col) curr, List<Node> closed_list)
+    
+    public bool Check((int row, int col) curr, List<(int row, int col)> path)
     {
-        for (int i = 0; i < closed_list.Count; i++)
+        for (int i = 0; i < path.Count; i++)
         {
-            if (curr.row == closed_list[i].position.row &&
-                curr.col == closed_list[i].position.col)
+            if (curr.row == path[i].row &&
+                curr.col == path[i].col)
             {
                 return true;
             }
