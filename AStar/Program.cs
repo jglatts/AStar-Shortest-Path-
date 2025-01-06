@@ -67,7 +67,7 @@ public class MazeSolver
     private List<(int y_scale, int x_scale)> scalar;
 
     public MazeSolver(Maze maze)
-    { 
+    {
         this.theMaze = maze;
         scalar = new List<(int y_scale, int x_scale)>()
         {
@@ -113,18 +113,15 @@ public class MazeSolver
         List<Node> closed_list = new List<Node>();
 
         DrawMaze(start_node, end_node, start, end);
-        
+
         open_list.Add(start_node);
         while (open_list.Count != 0)
         {
             Node current_node = open_list[0];
-            int current_idx = 0;
-
             for (int i = 0; i < open_list.Count; i++)
             {
                 if (open_list[i].f < current_node.f)
-                { 
-                    current_idx= i;
+                {
                     current_node = open_list[i];
                 }
             }
@@ -134,7 +131,7 @@ public class MazeSolver
             {
                 if (open_list[i].position.row == current_node.position.row &&
                     open_list[i].position.col == current_node.position.col)
-                { 
+                {
                     nodeToRemove = open_list[i];
                 }
             }
@@ -163,7 +160,9 @@ public class MazeSolver
                                                current_node.position.col + x_scale);
 
                 if (node_pos.row >= theMaze.rows ||
-                    node_pos.col >= theMaze.cols)
+                    node_pos.col >= theMaze.cols ||
+                    node_pos.row < 0 ||
+                    node_pos.col < 0)
                 {
                     continue;
                 }
@@ -178,14 +177,26 @@ public class MazeSolver
             }
 
             for (int i = 0; i < children.Count; i++)
-            { 
+            {
                 Node child_node = children[i];
                 child_node.g = current_node.g + 1;
                 int h = (int)Math.Pow((child_node.position.row - end_node.position.row), 2);
                 h += (int)Math.Pow((child_node.position.col - end_node.position.col), 2);
                 child_node.h = h;
                 child_node.f = child_node.g + child_node.h;
-                open_list.Add(child_node);
+
+                bool found = false;
+                for (int j = 0; j < open_list.Count; j++)
+                {
+                    if (open_list[j].position.row == child_node.position.row &&
+                        open_list[j].position.col == child_node.position.col)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    open_list.Add(child_node);
             }
         }
 
@@ -199,7 +210,11 @@ public class MazeSolver
                     Console.ForegroundColor = ConsoleColor.Green;
                 }
                 if (i == end.row && j == end.col)
-                { 
+                {
+                    Console.ForegroundColor = ConsoleColor.Blue;
+                }
+                if (i == start.row && j == start.col)
+                {
                     Console.ForegroundColor = ConsoleColor.Blue;
                 }
                 if (theMaze.maze[i, j] == 1)
@@ -226,13 +241,19 @@ public class MazeSolver
         return false;
     }
 
+    public static void Test()
+    {
+        MazeSolver m = new MazeSolver(new Maze(10, 10));
+        m.Solve((1, 1), (1, 9));
+        Console.WriteLine("\n");
+        m.Solve((1, 1), (3, 7));
+    }
 }
 
 public class AStar { 
 
     public static void Main(String[] args) 
     {
-        MazeSolver m = new MazeSolver(new Maze(10, 10));
-        m.Solve((1, 1), (7, 9));
+        MazeSolver.Test();
     }
 }
